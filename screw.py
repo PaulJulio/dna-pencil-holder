@@ -40,7 +40,6 @@ HELIX_RENDER_STEPS = HELIX_STEPS * 2
 PENCIL_RADIUS = 5  # the size of the hole for the pencil, not the size of the pencil itself
 PENCIL_Z_MIN = CAP_DEPTH + CAP_TAPER_DEPTH + PENCIL_RADIUS*2
 PENCIL_Z_MAX = BUILD_CEILING - CAP_DEPTH - CAP_TAPER_DEPTH - PENCIL_RADIUS
-# Delete the selected mesh objects
 """
 create a base from a cylinder, with some tapering
 """
