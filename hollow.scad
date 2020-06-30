@@ -10,7 +10,7 @@ difference(){
 							rotate(a = [0, 30.8943255446, -5.2941176471]) {
 								union() {
 									cube(center = true, size = [21.8185049322, 6, 20]);
-									cube(center = true, size = [29.8185049322, 2, 9]);
+									cube(center = true, size = [29.3185049322, 1.5000000000, 8.5000000000]);
 								}
 							}
 						}

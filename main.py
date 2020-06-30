@@ -22,6 +22,7 @@ SEGMENT_THICKNESS = 6  # how "thick" the helix should be
 TAB_THICKNESS = 2  # how thick the tabs should be
 TAB_WIDTH = 4  # how far out of the segment the tab should protrude
 TAB_HEIGHT = 9  # how tall the tab should be
+TAB_TRIM = 0.5  # how much to "shrink" the tab when printing it
 SEGMENT_HEIGHT = 20  # if the helix "ribbon" weren't rotated, what would its height be?
 CAP_HEIGHT = 15  # how tall is the base/top component?
 CAP_R = 75  # the radius of the base/top component
@@ -91,7 +92,7 @@ def return_segment_to_origin(translated_segment, segment_step, helix=1):
     return translated_segment
 
 
-def create_segment(segment_step, helix=1):
+def create_segment(segment_step, helix=1, trim_tab=False):
     current_z = Z_INTERVAL * segment_step
     current_t = current_z / HELIX_C
     current_x = HELIX_R * math.cos(current_t)
@@ -117,9 +118,17 @@ def create_segment(segment_step, helix=1):
     """
      even-numbered segments get a tab which appears attached to either side, 
      which will be matched with a slot in odd-numbered segments later.
+     if this piece is meant to be printed, it will need to be shrunk a bit to fit
     """
     if segment_step % 2 == 0:
-        tab = cube([SEGMENT_LENGTH + TAB_WIDTH * 2, TAB_THICKNESS, TAB_HEIGHT], center=True)
+        x = SEGMENT_LENGTH + TAB_WIDTH * 2
+        y = TAB_THICKNESS
+        z = TAB_HEIGHT
+        if trim_tab:
+            x -= TAB_TRIM
+            y -= TAB_TRIM
+            z -= TAB_TRIM
+        tab = cube([x, y, z], center=True)
         geo += tab
 
     geo = rotate([0, rot_y, -rot_z])(geo)
@@ -164,7 +173,7 @@ scad_render_to_file(world_geo, filepath=filepath, include_orig_code=False)
 """
 output a hollow piece to its own scad file
 """
-hollow_segment = create_segment(4)
+hollow_segment = create_segment(4, trim_tab=True)
 hollow_segment = return_segment_to_origin(hollow_segment, 4)
 hollow_segment = rotate([90, 0, 0])(hollow_segment)
 filepath = os.path.join(os.getcwd(), 'hollow.scad')
@@ -180,13 +189,32 @@ carved_segment = return_segment_to_origin(carved_segment, 5)
 filepath = os.path.join(os.getcwd(), 'solid.scad')
 scad_render_to_file(carved_segment, filepath=filepath, include_orig_code=False)
 """
-create a base, embed two solid segments and then subtract the two neighboring hollow segmments
+create a base, embed two solid segments and the neighboring hollow segments
+(note: this is because the pencil-holding segments are a bit into the base and sorting out
+ how to plug them in cleanly didn't seem worth it)
 """
 base = cylinder(h=CAP_HEIGHT, r=CAP_R, segments=CAP_SEGMENTS, center=False)
 base = translate([0, 0, CAP_OFFSET_Z])(base)
 base += create_segment(1)
 base += create_segment(1, helix=2)
-base = base + hole()(create_segment(2))
-base = base + hole()(create_segment(2, helix=2))
+base += create_segment(2, trim_tab=True)
+base += create_segment(2, helix=2, trim_tab=True)
 filepath = os.path.join(os.getcwd(), 'base.scad')
+scad_render_to_file(base, filepath=filepath, include_orig_code=False)
+"""
+create half of a full model. should print fine for most people and should be doable without supports
+"""
+base = cylinder(h=CAP_HEIGHT, r=CAP_R, segments=CAP_SEGMENTS, center=False)
+base = translate([0, 0, CAP_OFFSET_Z])(base)
+sc = 1
+doTrim = False
+while sc < HELIX_SEGMENTS / 2:
+    if sc > (HELIX_SEGMENTS / 2) - 1:
+        doTrim = True
+    base += create_segment(sc, trim_tab=doTrim)
+    base += create_segment(sc, helix=2, trim_tab=doTrim)
+    sc += 1
+base += create_segment(sc)
+base += hole()(create_segment(sc+1))
+filepath = os.path.join(os.getcwd(), 'half.scad')
 scad_render_to_file(base, filepath=filepath, include_orig_code=False)
